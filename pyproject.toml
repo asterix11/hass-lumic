@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lumic"
-version = "1.0.0"
+version = "1.0.1"
 description = "Lumic Home Assistant Integration"
 authors = ["Asterix11 <github@local.host>"]
 license = "MIT"
