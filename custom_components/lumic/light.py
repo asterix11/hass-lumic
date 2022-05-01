@@ -10,8 +10,10 @@ import asyncio
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_HS_COLOR,
+    ATTR_EFFECT,
     SUPPORT_BRIGHTNESS,
     SUPPORT_COLOR,
+    SUPPORT_EFFECT,
     LightEntity,
 )
 import homeassistant.util.color as color_util
@@ -122,6 +124,62 @@ class LumicLight(LightEntity):
         self._brightness = 0
         self._hs_color = [0, 0]
         self._state = False
+        self._scenes: list[str] = [
+            "Normal",
+            "Flashing", 
+            "DeCongest",
+            "ColorWipe",
+            "ColorWipeBackwards",
+            "ColorWipeRandom",
+            "RandomColor",
+            "RandomPixelColorSingle",
+            "RainbowAll",
+            "RainbowStream",
+            "Scanner",
+            "DualScanner",
+            "RunningLight",
+            "Sparkle",
+            "RandomSparkle",
+            "HyperSparkle",
+            "RunningColor",
+            "LarsonScanner",
+            "Comet",
+            "Fireworks",
+            "RandomFireworks",
+            "FireFlicker",
+            "FireFlickerLight",
+            "FireFlickerHeavy",
+            "FireFlickerNaturely"
+        ]
+        self._scenes_mapping: list[int] = [
+            "0",
+            "1",
+            "2",
+            "3",
+            "5",
+            "7",
+            "8",
+            "9",
+            "11",
+            "12",
+            "13",
+            "14",
+            "18",
+            "19",
+            "20",
+            "25",
+            "40",
+            "43",
+            "44",
+            "45",
+            "46",
+            "48",
+            "49",
+            "50",
+            "55"
+        ]
+        self._effect = None
+        self._available = False
         self._supported_features = self._determine_features()
         self._logger = logging.getLogger(
             ("%s:%s:<%s>") % (__name__, self.__class__.__name__, self._device_uuid)
@@ -129,7 +187,7 @@ class LumicLight(LightEntity):
 
     def _determine_features(self):
         """Get features supported by the device."""
-        features = SUPPORT_BRIGHTNESS | SUPPORT_COLOR
+        features = SUPPORT_BRIGHTNESS | SUPPORT_COLOR | SUPPORT_EFFECT
 
         return features
 
@@ -162,6 +220,12 @@ class LumicLight(LightEntity):
                 await self._api.setDeviceParameter(
                     self._device_uuid, "COLOR_WHITE", str(color_white)
                 )
+            if ATTR_EFFECT in kwargs:
+                effect = kwargs[ATTR_EFFECT]
+                index = self._scenes.index(effect)
+                await self._api.setDeviceParameter(
+                    self._device_uuid, "MODE", str(self._scenes_mapping[index])
+                )
             if not self._state:
                 await self._api.setDeviceParameter(self._device_uuid, "STATE", "1")
                 self._state = True
@@ -190,6 +254,7 @@ class LumicLight(LightEntity):
         result = await self._api.getDeviceById(self._device_id)
 
         self._mac = result["hardwareAddress"]
+        self._available = result["online"] == 1
 
         color = None
         color_white = None
@@ -213,6 +278,14 @@ class LumicLight(LightEntity):
                 color = i["value"]
             if self._supported_features & SUPPORT_COLOR and i["type"] == "COLOR_WHITE":
                 color_white = i["valueNumeric"]
+            
+            # Effect
+            if (
+                self._supported_features & SUPPORT_EFFECT
+                and i["type"] == "MODE"
+            ):
+                index = self._scenes_mapping.index(i["value"])
+                self._effect = self._scenes[index]
         
         if (color != None and color_white != None):
             r, g, b = int("0x%s" % color[1:3], base=16), int("0x%s" % color[3:5], base=16), int("0x%s" % color[5:7], base=16)
@@ -284,3 +357,20 @@ class LumicLight(LightEntity):
     def supported_features(self) -> int:
         """Flag supported features."""
         return self._supported_features
+
+    @property
+    def effect(self):
+        """Return the current effect."""
+        return self._effect
+
+    @property
+    def effect_list(self):
+        """Return the list of supported effects.
+        URL: https://docs.pro.wizconnected.com/#light-modes
+        """
+        return self._scenes
+
+    @property
+    def available(self):
+        """Return if able to retrieve information from device or not."""
+        return self._available

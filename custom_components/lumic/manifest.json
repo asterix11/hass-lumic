@@ -1,7 +1,7 @@
 {
   "domain": "lumic",
-  "version": "1.0.1",
   "name": "Lumic Lighting",
+  "version": "1.1.0",
   "config_flow": true,
   "documentation": "https://github.com/asterix11/hass-lumic",
   "issue_tracker": "https://github.com/asterix11/hass-lumic/issues",

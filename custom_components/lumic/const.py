@@ -26,6 +26,7 @@ query get_home_devices($id: Float!) {
             name
             hardwareAddress
             deviceType
+            online
             room {
                 name
             }
@@ -41,6 +42,7 @@ query get_device_by_id($id: Float!) {
         name
         hardwareAddress
         deviceType
+        online
         room {
             name
         }
